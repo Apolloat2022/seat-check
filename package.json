@@ -3,7 +3,6 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "add-teacher": "node scripts/add-teacher.mjs",
     "check": "node scripts/check-login.mjs"
   }
 }

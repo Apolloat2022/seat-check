@@ -35,6 +35,7 @@ main{max-width:640px;margin:0 auto;display:flex;flex-direction:column;gap:14px;
 header{display:flex;justify-content:space-between;align-items:baseline;gap:12px}
 h1{font-family:var(--display);font-size:1.5rem;margin:0;letter-spacing:-.01em}
 .date{color:var(--muted);font-size:.9rem}
+.signout{color:var(--muted);font-size:.85rem;margin-left:10px}
 .tabs{display:grid;grid-template-columns:repeat(6,1fr);gap:6px}
 .tabs button{font:600 1rem var(--display);padding:8px 0;border-radius:8px;border:1px solid var(--line);background:var(--surface);color:var(--fg)}
 .tabs button[aria-pressed="true"]{background:var(--accent);color:var(--accent-fg);border-color:var(--accent)}
@@ -89,7 +90,7 @@ select{font:400 .9rem var(--body);color:var(--fg);background:var(--bg);border:1p
 <body>
 
 <main>
-  <header><h1>Seat Check</h1><span class="date" id="date"></span></header>
+  <header><h1>Seat Check</h1><span><span class="date" id="date"></span><a class="signout" href="/auth/logout">Sign out</a></span></header>
   <nav class="tabs" id="tabs" aria-label="Class period"></nav>
   <p class="note" id="example" hidden>These are example names. Tap “Edit names and chairs” and paste your class list.</p>
 
