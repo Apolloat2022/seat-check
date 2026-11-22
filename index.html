@@ -1,0 +1,399 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Seat Check</title>
+<style>
+:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+body{margin:0}
+[hidden]{display:none!important}
+</style>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;700&display=swap">
+<style>
+/* Layout: one phone column. Period tabs, bell control, the room as seen from the back (board on top, desk at bottom left), then the Skyward list. */
+:root{
+  --bg:#f2f5f3; --surface:#ffffff; --fg:#1b2520; --muted:#5a6a61; --line:#d3dcd6;
+  --board:#2e4a3c; --board-fg:#e6efe9; --accent:#2e6b4e; --accent-fg:#ffffff;
+  --present:#1f7a4d; --present-bg:#dcf2e5; --absent:#b8322a; --absent-bg:#fbe3e0;
+  --tardy:#9a6200; --tardy-bg:#fcefd2; --wood:#c9b79a; --wood-fg:#3d3326;
+  --display:"Space Grotesk",system-ui,sans-serif; --body:"Inter",system-ui,-apple-system,sans-serif;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#121815; --surface:#1b2420; --fg:#e4ebe7; --muted:#9aaba2; --line:#2d3a33;
+  --board:#2b4537; --board-fg:#dbe8e0; --accent:#5fae88; --accent-fg:#0d1511;
+  --present:#6fd39f; --present-bg:#173d2a; --absent:#ff8a80; --absent-bg:#4a1f1b;
+  --tardy:#f0b54a; --tardy-bg:#43320f; --wood:#5a4c38; --wood-fg:#efe4d2; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#121815; --surface:#1b2420; --fg:#e4ebe7; --muted:#9aaba2; --line:#2d3a33;
+  --board:#2b4537; --board-fg:#dbe8e0; --accent:#5fae88; --accent-fg:#0d1511;
+  --present:#6fd39f; --present-bg:#173d2a; --absent:#ff8a80; --absent-bg:#4a1f1b;
+  --tardy:#f0b54a; --tardy-bg:#43320f; --wood:#5a4c38; --wood-fg:#efe4d2; color-scheme:dark}
+body{background:var(--bg);color:var(--fg);font-family:var(--body);font-size:15px;line-height:1.45}
+main{max-width:640px;margin:0 auto;display:flex;flex-direction:column;gap:14px;
+  padding-block:16px 40px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+header{display:flex;justify-content:space-between;align-items:baseline;gap:12px}
+h1{font-family:var(--display);font-size:1.5rem;margin:0;letter-spacing:-.01em}
+.date{color:var(--muted);font-size:.9rem}
+.tabs{display:grid;grid-template-columns:repeat(6,1fr);gap:6px}
+.tabs button{font:600 1rem var(--display);padding:8px 0;border-radius:8px;border:1px solid var(--line);background:var(--surface);color:var(--fg)}
+.tabs button[aria-pressed="true"]{background:var(--accent);color:var(--accent-fg);border-color:var(--accent)}
+.tabs small{display:block;font:500 .62rem var(--body);letter-spacing:.06em;text-transform:uppercase;opacity:.75}
+.note{background:var(--tardy-bg);border-radius:8px;padding:8px 12px;font-size:.85rem;margin:0}
+.bell{display:flex;align-items:center;justify-content:space-between;gap:10px;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:10px 12px}
+.bell p{margin:0;font-size:.88rem}
+.bell.rung{border-color:var(--tardy);background:var(--tardy-bg)}
+.board{background:var(--board);color:var(--board-fg);text-align:center;border-radius:6px 6px 2px 2px;padding:6px;
+  font:600 .72rem var(--body);letter-spacing:.14em;text-transform:uppercase}
+.sides{display:flex;justify-content:space-between;font:600 .68rem var(--body);letter-spacing:.1em;text-transform:uppercase;color:var(--muted);padding:4px 2px}
+.room{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px}
+.seat{min-height:52px;border-radius:8px;border:1px solid var(--line);background:var(--surface);color:var(--fg);
+  font:500 .78rem var(--body);padding:4px 2px;overflow-wrap:anywhere;line-height:1.15;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px}
+.seat.open{border-style:dashed;color:var(--muted)}
+.seat.P{background:var(--present-bg);border-color:var(--present);color:var(--present);font-weight:700}
+.seat.T{background:var(--tardy-bg);border-color:var(--tardy);color:var(--tardy);font-weight:700}
+.seat.A{background:var(--absent-bg);border-color:var(--absent);color:var(--absent)}
+.seat .tag{font-size:.6rem;letter-spacing:.08em}
+.seat input{width:100%;box-sizing:border-box;font:500 .78rem var(--body);text-align:center;padding:6px 2px;border:0;background:transparent;color:var(--fg)}
+.seat.edit{position:relative;padding-top:16px}
+.seat .x{position:absolute;top:2px;right:2px;width:24px;height:24px;border-radius:50%;border:1px solid var(--line);background:var(--bg);color:var(--absent);font:700 .85rem var(--body);line-height:1;padding:0}
+.gap{min-height:52px;border-radius:8px;border:1px dashed var(--line);background:transparent;color:var(--muted);font:600 .72rem var(--body);padding:0}
+.gap.view{border-color:transparent}
+.shelf,.desk{background:var(--wood);color:var(--wood-fg);border-radius:6px;display:flex;align-items:center;justify-content:center;
+  font:600 .66rem var(--body);letter-spacing:.1em;text-transform:uppercase;text-align:center}
+.deskrow{display:flex;justify-content:flex-start;margin-top:6px}
+.desk{width:40%;padding:10px 4px}
+.legend{color:var(--muted);font-size:.82rem;text-align:center;margin:0}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:14px;display:flex;flex-direction:column;gap:8px}
+.panel h2{font:700 1.05rem var(--display);margin:0}
+.line{margin:0}.line b{display:inline-block;min-width:6.5em}
+.line.a b{color:var(--absent)}.line.t b{color:var(--tardy)}.line.p b{color:var(--present)}
+.row{display:flex;gap:8px;flex-wrap:wrap}
+button.act{font:600 .9rem var(--body);padding:10px 14px;border-radius:8px;border:1px solid var(--line);background:var(--surface);color:var(--fg)}
+button.act.primary{background:var(--accent);color:var(--accent-fg);border-color:var(--accent)}
+button.act.warn{border-color:var(--absent);color:var(--absent)}
+button:focus-visible,textarea:focus-visible,input:focus-visible,summary:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+details{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:12px 14px}
+summary{font-weight:600;cursor:pointer}
+details[open] summary{margin-bottom:10px}
+details .body{display:flex;flex-direction:column;gap:10px}
+textarea{font:400 .9rem var(--body);color:var(--fg);background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:8px;min-height:6em;width:100%;box-sizing:border-box}
+.hint{font-size:.82rem;color:var(--muted);margin:0}
+.msg{font-size:.85rem;color:var(--accent);margin:0;min-height:1.2em}
+#listBox label{display:flex;flex-direction:column;gap:4px;font-size:.85rem;color:var(--muted)}
+select{font:400 .9rem var(--body);color:var(--fg);background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:8px;max-width:100%}
+#nameList{min-height:14em}
+</style>
+</head>
+<body>
+
+<main>
+  <header><h1>Seat Check</h1><span class="date" id="date"></span></header>
+  <nav class="tabs" id="tabs" aria-label="Class period"></nav>
+  <p class="note" id="example" hidden>These are example names. Tap “Edit names and chairs” and paste your class list.</p>
+
+  <div class="bell" id="bell">
+    <p id="bellText"></p>
+    <button class="act" id="bellBtn"></button>
+  </div>
+
+  <section aria-label="Seating chart">
+    <div class="board">Board · front of room</div>
+    <div class="sides"><span>← Wall side</span><span>Door side →</span></div>
+    <div class="room" id="room"></div>
+    <div class="deskrow"><div class="desk">Your desk</div></div>
+  </section>
+  <p class="legend" id="legend"></p>
+
+  <div class="row">
+    <button class="act" id="editBtn">Edit names</button>
+  </div>
+  <div class="row" id="layoutBar" hidden>
+    <button class="act" id="addRow">+ Row at back</button>
+    <button class="act" id="delRow">− Back row</button>
+    <button class="act" id="addCol">+ Column on door side</button>
+    <button class="act" id="delCol">− Door-side column</button>
+    <button class="act" id="resetRoom">Reset to my room</button>
+  </div>
+  <section class="panel" id="listBox" hidden>
+    <h2>Fill chairs from a list</h2>
+    <label for="order">Fill order
+      <select id="order">
+        <option value="col">Column by column: wall side first, front to back</option>
+        <option value="row">Row by row: front row first, wall side to door side</option>
+      </select></label>
+    <textarea id="nameList" spellcheck="false" autocapitalize="words" aria-label="Student names, one per line"></textarea>
+    <p class="hint">One name per line, or paste a list. Type a dash (-) to leave a chair empty. The shelf spots are skipped.</p>
+    <div class="row"><button class="act primary" id="fillList">Put names on chart</button></div>
+    <p class="msg" id="listMsg"></p>
+  </section>
+
+  <section class="panel" aria-live="polite">
+    <h2 id="sumTitle"></h2>
+    <p class="line a"><b id="aCount"></b><span id="aList"></span></p>
+    <p class="line t"><b id="tCount"></b><span id="tList"></span></p>
+    <p class="line p"><b id="pCount"></b><span>checked in on time</span></p>
+    <div class="row">
+      <button class="act primary" id="copy">Copy list</button>
+      <button class="act warn" id="clear">Start over</button>
+    </div>
+    <p class="msg" id="msg"></p>
+  </section>
+
+  <details>
+    <summary>Backup and restore</summary>
+    <div class="body">
+      <p class="hint">Names are saved only in this phone's browser. If you clear your browser data they are gone, so after typing your classes, copy the backup code and keep it in a private note. To restore, paste the code here and tap Restore.</p>
+      <textarea id="backup" spellcheck="false" aria-label="Backup code"></textarea>
+      <div class="row">
+        <button class="act" id="showBackup">Copy backup code</button>
+        <button class="act" id="restore">Restore</button>
+      </div>
+      <p class="msg" id="backupMsg"></p>
+    </div>
+  </details>
+</main>
+
+<script>
+const KEY = 'seatcheck-v2';
+const $ = id => document.getElementById(id);
+const today = () => new Date().toLocaleDateString('en-CA');
+
+// Default room, seen from the teacher's desk: 5 columns x 6 rows, wall and shelf on the left,
+// door on the right. The wall column has no chairs in its front two spots (the shelf).
+// Chairs can be added or removed in Edit mode.
+const DEFAULT_LAYOUT = { rows: 6, cols: 5, off: ['0-0', '0-1'] };
+const SHELF = ['0-0', '0-1']; // front two spots of the wall column
+const copyLayout = l => ({ rows: l.rows, cols: l.cols, off: [...l.off] });
+function cells(L) {
+  const out = [];
+  for (let r = 0; r < L.rows; r++) for (let c = 0; c < L.cols; c++) {
+    const id = c + '-' + r; out.push({ id, c, r, on: !L.off.includes(id) });
+  }
+  return out;
+}
+
+const EXAMPLE = ['Ava','Liam','Noah','Mia','Ethan','Sofia','Mason','Zoe','Lucas','Isabella','Jayden','Emma','Carlos',
+  'Aria','Elijah','Chloe','Diego','Layla','Owen','Harper','Mateo','Nora','Caleb','Lily','Gabriel','Ella','Jacob','Ruby'];
+
+function fresh() {
+  const periods = {};
+  for (let i = 1; i <= 6; i++) periods[i] = { names: {}, example: false };
+  cells(DEFAULT_LAYOUT).filter(s => s.on).forEach((s, i) => periods[1].names[s.id] = EXAMPLE[i]);
+  periods[1].example = true;
+  return { periods, layout: copyLayout(DEFAULT_LAYOUT), day: { date: today(), p: {} }, cur: 1 };
+}
+function load() {
+  try {
+    const s = JSON.parse(localStorage.getItem(KEY));
+    if (s && s.periods && s.day) {
+      s.layout ||= copyLayout(DEFAULT_LAYOUT);
+      if (s.layout.cols === 5 && s.layout.off.join() === '4-0,4-1') {
+        // Earlier version drew the room mirrored. Flip it, keeping each name in its column.
+        s.layout = copyLayout(DEFAULT_LAYOUT);
+        for (const p of Object.values(s.periods)) {
+          const n = {};
+          for (const [id, v] of Object.entries(p.names)) { const [c, r] = id.split('-').map(Number); n[(4 - c) + '-' + r] = v; }
+          p.names = n;
+        }
+        s.day = { date: today(), p: {} };
+      }
+      return s;
+    }
+  } catch (e) {}
+  return fresh();
+}
+function save() { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) {} }
+
+let S = load(), editing = false;
+
+function day() {
+  if (S.day.date !== today()) S.day = { date: today(), p: {} }; // new school day, clean slate
+  return (S.day.p[S.cur] ||= { m: {}, bell: false });
+}
+
+function summary() {
+  const P = S.periods[S.cur], d = day(), A = [], T = [];
+  let present = 0;
+  cells(S.layout).forEach(s => {
+    const n = s.on && P.names[s.id]; if (!n) return;
+    const st = d.m[s.id];
+    if (st === 'P') present++; else if (st === 'T') T.push(n); else A.push(n);
+  });
+  return { A, T, present };
+}
+
+function render() {
+  const P = S.periods[S.cur], d = day();
+  $('date').textContent = new Date().toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
+  $('tabs').innerHTML = [1,2,3,4,5,6].map(i =>
+    `<button data-p="${i}" aria-pressed="${i == S.cur}"><small>Per</small>${i}</button>`).join('');
+  $('example').hidden = !P.example;
+
+  $('bell').classList.toggle('rung', d.bell);
+  $('bellText').textContent = d.bell ? 'Bell rang. Anyone you tap now is marked Tardy.' : 'Before the bell. Tap students as they walk in.';
+  $('bellBtn').textContent = d.bell ? 'Undo bell' : 'Bell rang';
+  $('legend').textContent = editing ? 'Type each student’s name in their chair. Tap × to remove a chair, or “+ chair” to add one.'
+    : 'Tap a seat when the student walks in. Tap again to undo.';
+  $('editBtn').textContent = editing ? 'Done editing' : 'Edit names and chairs';
+  $('layoutBar').hidden = !editing;
+  $('listBox').hidden = !editing;
+
+  const room = $('room');
+  room.style.gridTemplateColumns = `repeat(${S.layout.cols}, minmax(0, 1fr))`;
+  room.innerHTML = '';
+  cells(S.layout).forEach(s => {
+    const name = P.names[s.id] || '';
+    const label = `Column ${s.c + 1}, row ${s.r + 1}`;
+    let el;
+    if (!s.on) {
+      if (editing) {
+        el = document.createElement('button'); el.className = 'gap'; el.dataset.add = s.id;
+        el.textContent = '+ chair'; el.setAttribute('aria-label', `Add a chair at ${label}`);
+      } else if (SHELF.includes(s.id) && SHELF.every(id => S.layout.off.includes(id))) {
+        if (s.id === SHELF[1]) return; // the shelf box spans both spots
+        el = document.createElement('div'); el.className = 'shelf'; el.textContent = 'Shelf'; el.dataset.span = '1';
+      } else { el = document.createElement('div'); el.className = 'gap view'; el.setAttribute('aria-hidden', 'true'); }
+    } else if (editing) {
+      el = document.createElement('div'); el.className = 'seat edit';
+      const inp = document.createElement('input');
+      inp.value = name; inp.dataset.id = s.id; inp.id = 'seat-' + s.id;
+      inp.setAttribute('aria-label', label); inp.autocapitalize = 'words'; inp.spellcheck = false;
+      const x = document.createElement('button');
+      x.className = 'x'; x.dataset.del = s.id; x.textContent = '×'; x.setAttribute('aria-label', `Remove the chair at ${label}`);
+      el.append(x, inp);
+    } else if (!name) {
+      el = document.createElement('div'); el.className = 'seat open'; el.setAttribute('aria-hidden', 'true');
+    } else {
+      const st = d.m[s.id] || (d.bell ? 'A' : '');
+      el = document.createElement('button'); el.className = 'seat ' + st; el.dataset.id = s.id;
+      el.textContent = name;
+      const word = { P: 'present', T: 'tardy', A: 'absent', '': 'not here yet' }[st];
+      el.setAttribute('aria-label', `${name}, ${word}`);
+      if (st) { const t = document.createElement('span'); t.className = 'tag'; t.textContent = { P: 'HERE', T: 'TARDY', A: 'ABSENT' }[st]; el.append(t); }
+    }
+    el.style.gridColumn = s.c + 1; el.style.gridRow = el.dataset.span ? `${s.r + 1} / span 2` : s.r + 1;
+    room.append(el);
+  });
+
+  const sm = summary();
+  $('sumTitle').textContent = `Period ${S.cur}: enter in Skyward`;
+  $('aCount').textContent = (d.bell ? 'Absent ' : 'Not here yet ') + sm.A.length;
+  $('aList').textContent = sm.A.join(', ') || 'none';
+  $('tCount').textContent = `Tardy ${sm.T.length}`;
+  $('tList').textContent = sm.T.join(', ') || 'none';
+  $('pCount').textContent = `Present ${sm.present}`;
+}
+
+async function copyText(text, msgEl, fallbackEl) {
+  try { await navigator.clipboard.writeText(text); msgEl.textContent = 'Copied.'; }
+  catch (e) {
+    if (fallbackEl) { fallbackEl.value = text; fallbackEl.select(); }
+    msgEl.textContent = 'Could not copy automatically. Select the text and copy it.';
+  }
+}
+
+$('tabs').addEventListener('click', e => {
+  const b = e.target.closest('button'); if (!b) return;
+  S.cur = +b.dataset.p; $('msg').textContent = ''; save(); render();
+  if (editing) { fillListBox(); $('listMsg').textContent = ''; }
+});
+
+$('room').addEventListener('click', e => {
+  const add = e.target.closest('[data-add]'), del = e.target.closest('[data-del]');
+  if (add) { S.layout.off = S.layout.off.filter(x => x !== add.dataset.add); save(); render(); return; }
+  if (del) { S.layout.off.push(del.dataset.del); save(); render(); return; }
+  const b = e.target.closest('button.seat'); if (!b) return;
+  const d = day(), id = b.dataset.id;
+  if (d.m[id]) delete d.m[id]; else d.m[id] = d.bell ? 'T' : 'P';
+  save(); render();
+});
+
+$('room').addEventListener('input', e => {
+  const inp = e.target.closest('input'); if (!inp) return;
+  const P = S.periods[S.cur], v = inp.value.trim();
+  if (v) P.names[inp.dataset.id] = v; else delete P.names[inp.dataset.id];
+  if (P.example) { P.example = false; $('example').hidden = true; }
+  save(); fillListBox();
+});
+
+$('editBtn').addEventListener('click', () => { editing = !editing; render(); if (editing) { fillListBox(); $('listMsg').textContent = ''; } });
+
+function orderedSeats() {
+  const on = cells(S.layout).filter(s => s.on); // cells() already runs row by row
+  return $('order').value === 'col' ? on.sort((a, b) => a.c - b.c || a.r - b.r) : on;
+}
+function fillListBox() {
+  const P = S.periods[S.cur], n = orderedSeats().map(s => P.names[s.id] || '-');
+  while (n.length && n[n.length - 1] === '-') n.pop();
+  $('nameList').value = n.join('\n');
+}
+$('order').addEventListener('change', fillListBox);
+$('fillList').addEventListener('click', () => {
+  const P = S.periods[S.cur], seats = orderedSeats();
+  const lines = $('nameList').value.split('\n').map(x => x.trim()).filter(Boolean); // blank lines ignored, '-' = empty chair
+  const names = {};
+  seats.forEach((s, i) => { const v = lines[i]; if (v && v !== '-') names[s.id] = v; });
+  P.names = names; P.example = false;
+  day(); S.day.p[S.cur] = { m: {}, bell: false }; // seats changed, old taps no longer match
+  save(); render(); fillListBox();
+  const extra = lines.slice(seats.length);
+  $('listMsg').textContent = extra.length
+    ? `Filled all ${seats.length} chairs. ${extra.length} name(s) didn’t fit: ${extra.join(', ')}. Add chairs, then tap again.`
+    : `Placed ${lines.filter(x => x !== '-').length} names.`;
+});
+
+function resize(dr, dc) {
+  const L = S.layout;
+  L.rows = Math.min(10, Math.max(1, L.rows + dr));
+  L.cols = Math.min(8, Math.max(1, L.cols + dc));
+  L.off = L.off.filter(id => { const [c, r] = id.split('-').map(Number); return c < L.cols && r < L.rows; });
+  save(); render();
+}
+$('addRow').addEventListener('click', () => resize(1, 0));
+$('delRow').addEventListener('click', () => resize(-1, 0));
+$('addCol').addEventListener('click', () => resize(0, 1));
+$('delCol').addEventListener('click', () => resize(0, -1));
+$('resetRoom').addEventListener('click', () => { S.layout = copyLayout(DEFAULT_LAYOUT); save(); render(); });
+
+$('bellBtn').addEventListener('click', () => { const d = day(); d.bell = !d.bell; save(); render(); });
+
+$('copy').addEventListener('click', () => {
+  const sm = summary(), d = day();
+  const text = `Period ${S.cur} (${S.day.date})\nAbsent: ${sm.A.join(', ') || 'none'}\nTardy: ${sm.T.join(', ') || 'none'}`;
+  copyText(text, $('msg'));
+  if (!d.bell) $('msg').textContent += ' Note: the bell is not marked yet, so “Absent” is everyone not here so far.';
+});
+
+let clearArmed = null;
+$('clear').addEventListener('click', () => {
+  if (!clearArmed) {
+    $('clear').textContent = 'Tap again to start over';
+    clearArmed = setTimeout(() => { clearArmed = null; $('clear').textContent = 'Start over'; }, 3000);
+    return;
+  }
+  clearTimeout(clearArmed); clearArmed = null; $('clear').textContent = 'Start over';
+  S.day.p[S.cur] = { m: {}, bell: false }; save(); render(); $('msg').textContent = 'Cleared this period.';
+});
+
+$('showBackup').addEventListener('click', () => {
+  const code = JSON.stringify({ periods: S.periods, layout: S.layout });
+  $('backup').value = code;
+  copyText(code, $('backupMsg'), $('backup'));
+});
+
+$('restore').addEventListener('click', () => {
+  try {
+    const d = JSON.parse($('backup').value);
+    if (!d.periods || !d.periods[1] || !d.periods[1].names) throw 0;
+    S.periods = d.periods; S.layout = d.layout || copyLayout(DEFAULT_LAYOUT);
+    S.day = { date: today(), p: {} }; save(); render();
+    $('backupMsg').textContent = 'Restored.';
+  } catch (e) { $('backupMsg').textContent = 'That code is not a Seat Check backup. Copy the whole code and try again.'; }
+});
+
+render();
+</script>
+</body>
+</html>
